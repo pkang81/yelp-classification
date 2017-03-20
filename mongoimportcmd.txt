@@ -1,0 +1,12 @@
+
+
+ mongoimport --db yelpbiz  --collection restaurants --drop --jsonArray cleaned_business_data.json
+
+mongo
+
+show dbs
+
+use yelpbiz
+
+
+db.restaurants.find()
