@@ -34,7 +34,7 @@ import pdb
 '''
 create a list of all users that have reviews over 1000
 '''
-
+conn = MongoClient(ip, 27017)
 
 c = db.get_collection('academic_reviews')
 u = db.get_collection('users')
