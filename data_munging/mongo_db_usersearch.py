@@ -30,6 +30,7 @@ from pymongo import MongoClient
 from datetime import datetime
 import json
 import pdb
+import csv
 
 '''
 create a list of all users that have reviews over 1000
@@ -46,13 +47,25 @@ u = db.get_collection('users')
 
 biguser = []
 
-for obj in u.find({'review_count':{'$gt':1000}}):
+for obj in u.find({'review_count':{'$gt':4000}}):
     print(obj['user_id'])
     biguser.append(obj['user_id'])
+
+
+
+
+
+
+with open('users.csv', 'w') as myfile:
+    wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+    wr.writerow(biguser)
+
 
 '''
 get the business ids of the places they review
 '''
+
+
 
 
 biznames =[]
@@ -60,7 +73,11 @@ biznames =[]
 for user in biguser:
     for obj in c.find({'user_id':user}):
         biznames.append(obj['business_id'])
-    return biznames
+
+with open('bizness.csv', 'w') as myfile:
+    wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+    wr.writerow(biguser)
+
 
 '''
 next step - build a list of reviews for each business
@@ -71,6 +88,8 @@ then build a "generative " data set from each user and a test set
 '''
 
 
+'''
+scrap code
 
 
 conn = MongoClient()
@@ -105,7 +124,7 @@ for obj in c.find( ):
                 continue
         except KeyError:
             pass
-        if datetime.strptime(obj['date'][0:4], '%Y') >= threshold_year:
+        if datetime.strptime(obj['date'][0:4], '') >= threshold_year:
             del obj['_id']
             try:
                 reviews_dict[obj['state']].append(obj)
@@ -117,3 +136,4 @@ for obj in c.find( ):
 
 
 #pdb.set_trace()
+'''
