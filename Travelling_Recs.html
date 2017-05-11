@@ -11752,15 +11752,15 @@ div#notebook {
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <h1 id="Goal">Goal<a class="anchor-link" href="#Goal">&#182;</a></h1><p>We want to recommend restaurants that the user will <strong>like</strong> based off that users existing reviews. We will do so by building a recommendation system that predicts whether a user will like a restaurant on a binary scale (good or bad).</p>
-<p>There are a couple of scenarios that we're trying to capture when recommending a good restaurant:</p>
+<p>There are a few scenarios that we're trying to capture when recommending a good restaurant:</p>
 <ol>
 <li>A restaurant that has a terrible rating but for some reason the user loves it</li>
 <li>A restaurant that has a terrible rating and the user also hates it</li>
 <li>A restaurant that has a really good rating but for some reason the user doesn't really like it</li>
 <li>A restaurant that has a really good rating and the user loves it</li>
 </ol>
-<p>We want to recommend restaurants that match scenarios 1 and 4 and filter out for scenarios 2 and 3. We try to do this via the below hypotheses. The general idea is that we can capture the first portion of each scenario, "A restaurant that has [blank] rating", using linguistic tone. This is embodied in Hypothesis 2, where we define linguistic tone to be the negative and positive word categories in the Hu and Liu (2004) word dictionary. Hypothesis 1 tries to capture the second part of each scenario, "the user feels [blank] about it", by using unsupervised machine learning methods trained on each users specific syntax.</p>
-<p>We can interpret the weight that we place on Hypothesis 2 as the importance we place on linguistic tone and the weight on Hypothesis 1 as the importance we place on the users word choice.</p>
+<p>We want to recommend restaurants that match scenarios 1 and 4 and filter out for scenarios 2 and 3. We try to do this via the below hypotheses. The general idea is that we can capture the first portion of each scenario, "A restaurant that has [blank] rating", using linguistic tone. This is embodied in Hypothesis 2, where we define linguistic tone to be the word count of the negative and positive word categories in the Hu and Liu (2004) word dictionary. Hypothesis 1 tries to capture the second part of each scenario, "the user feels [blank] about it", by using unsupervised machine learning methods trained on each users specific syntax.</p>
+<p>We can interpret the features from Hypothesis 2 as the the linguistic tone of the reviews and the features from Hypothesis 1 as the word choice embedded in the review.</p>
 <p>For more information see:</p>
 <ul>
 <li><a href="https://www.cs.cornell.edu/~rahmtin/files/YelpClassProject.pdf">A Yelp Recommendation System</a></li>
@@ -11769,7 +11769,7 @@ div#notebook {
 <li><a href="https://kaggle2.blob.core.windows.net/forum-message-attachments/9102/vsu_RecSys2013.pdf">2013 Yelp RecSys Kaggle Competition Runner Up Recommendation System</a> </li>
 <li><a href="https://www.cs.uic.edu/~liub/publications/kdd04-revSummary.pdf">Hu &amp; Liu (2004)</a></li>
 </ul>
-<p>Note: The method presented below is novel in the sense that we do not rely on restaurant descriptors, but only on the text of each users review. Although the inputs are different, the classification methods are similiar and we should expect similiar results if text is as good of a predictor as restaurant attributes.</p>
+<p>Note: The method presented below is novel in the sense that we do not rely on restaurant attributes (Price, Locaation, Type of Food, Outdoor Seating Availability, etc), but only on the text of each users review. Although the inputs are different, the classification methods are similiar and we should expect similiar results if text is as good of a predictor as restaurant attributes.</p>
 
 </div>
 </div>
@@ -11782,12 +11782,10 @@ div#notebook {
 <h1 id="Hypotheses">Hypotheses<a class="anchor-link" href="#Hypotheses">&#182;</a></h1><p>We create our recommendation using the following hypotheses:</p>
 <p><strong>Hyptohesis 1</strong>: The user's <em>word choice</em> in his review are correlated with the kinds of restaurants that the user likes to visit and the types of food that the user likes to consume.</p>
 <p><strong>Hyptohesis 2</strong>: The <em>tone</em> of a user's review is correlated with the kinds of restaurants that the user likes to visit and the types of food that the user likes to consume.</p>
-<p>If the first hypothesis is true, then a user ought to like a restaurant that has reviews that use many of the same word choices. Word choice here means how a word is placed within a document. For example, "The Thai food here is disgusting" has a starkly different word choice than "I love the amazing Thai food here". To capture this, we use LDA to create a matrix representation of each review. The topic loadings are selected based on a mixture methodology between the top coefficients in a tf-idf representation of the user reviews and the top unique words in the user's reviews. We train on the reviews of new restaurants. Next, we use machine learning algorithms (detailed below) to classify user reviews into new restaurants.</p>
-<p>If the second hypothesis is true, then a user ought to like a restaurant that has reviews that have the same tone that she uses to describe restaurants that she likes. We define "tonally similiar" here to mean that the user's review, represented as a tf-idf matrix, has many of the same positive &amp; negative word usage as the reviews of the new restaurant. Positive &amp; negative words are defined using the Hu &amp; Liu (2004) Yelp Dictionary. Next, we use machine learning algorithms (detailed below) to classify user reviews into new restaurants.</p>
-<p>With both hypotheses, the end result is that we try to predict which new restaurant a user's review was classified as most likely to be describing.</p>
-<p>A priori, our weights on the first hypothesis is 0.6 and our weight on the second hypothesis is 0.4 We can update these weights via user feedback. Specifically, we can define the following loss function and iterate through hypothesis weights until we minimize the loss. Ideally, we could get user feedback from these recommendations, adjust our weights, then get more feedback in an iterative attempt at minimizing the loss function.</p>
-$$RMSE(x_{1}, x_{2}) =  \sum_{i=1}^{N} \sqrt{\frac{(y_{i, pred}(x_{1}, x_{2}) - y_{i, actual})^{2}}{N}}$$<p>Note, this function is analagous to the mean squared error used in the 2013 Yelp RecSys challenge:</p>
-$$RMSE =  \sum_{i=1}^{N} \sqrt{\frac{(y_{i, pred} - y_{i, actual})^{2}}{N}}$$
+<p>If the first hypothesis is true, then a user ought to like a restaurant that has reviews that use many of the same word choices. Word choice here means how a word is placed within a document. For example, "The Thai food here is disgusting" has a starkly different word choice than "I love the amazing Thai food here". To capture this, we use LDA to create a matrix representation of each review. The number topic loadings are selected based on an iterative process in which we adjust the number of loadings based on classification results.</p>
+<p>If the second hypothesis is true, then a user ought to like a restaurant that has reviews that have a similiar kind of tone that she uses to describe restaurants that she likes. We define "tonally similiar" here to mean that the user's review, represented as a tf-idf matrix, has many of the same positive &amp; negative word counts as the reviews of the new restaurant. Positive &amp; negative words are defined using the Hu &amp; Liu (2004) Yelp Dictionary.</p>
+<p>We train a variety of machine learning algorithms (detailed below) on the reviews of new restaurants using the features from the two hypotheses. Next, we use the trained algorithms to classify user reviews into these new restaurants. The end result is that we have a tuple (User Review, User Rating, New Restaurant). Amongst this set of tuples, we filter for only user ratings that have at least 4 stars then take the top 5 restaurants that appear most often in our classification results and recommend those 5 restaurants to the user.</p>
+
 </div>
 </div>
 </div>
@@ -11796,11 +11794,11 @@ $$RMSE =  \sum_{i=1}^{N} \sqrt{\frac{(y_{i, pred} - y_{i, actual})^{2}}{N}}$$
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="Hypothesis-1-Algorithm-Sketch:">Hypothesis 1 Algorithm Sketch:<a class="anchor-link" href="#Hypothesis-1-Algorithm-Sketch:">&#182;</a></h1><p>The goal of this algorithm sketch is to create a classification scheme using Hypothesis 1. We create a 10-word topic loading using a combination of top unique words and the top words in a given set of user reviews as defined by tf-idf. Next, we use LDA to represent the reviews in $Y_{s}$ and $B$ as dense matrices. We run classifcation algorithms on these matrices.</p>
-<p>Let B be the set of user reviews. Let $Y_{s}$ be a set of reviews in a given location, s.</p>
+<h1 id="Hypothesis-1-Algorithm-Sketch:">Hypothesis 1 Algorithm Sketch:<a class="anchor-link" href="#Hypothesis-1-Algorithm-Sketch:">&#182;</a></h1><p>Let B be the set of user reviews. Let $Y_{s}$ be a set of reviews in a given location, s.</p>
 <p>The elements of $Y_{s}$ and $B$ are characterized by the tuple $(t, r, R)$ where:</p>
 <p>$t = \text{text}, r = \text{rating}, R = \text{Restaurant ID}$</p>
 <p>We want a mapping such that $f(B): B \rightarrow \text{Most similiar R in } Y_{s}$</p>
+<p>The goal of this algorithm sketch is to create a classification scheme using Hypothesis 1. We create a 25-word topic loading using a combination of top unique words and the top words in a given set of user reviews as defined by tf-idf. We choose 25 arbtirarily and will update the number of topic loadings as a function of how well our algorithms are able to classify user reviews. Next, we use LDA to represent the reviews in $Y_{s}$ and $B$ as dense matrices. We run classifcation algorithms on these matrices.</p>
 <p>We propose the following algorithm:</p>
 <ol>
 <li><p><strong>Build</strong>:</p>
@@ -11834,40 +11832,6 @@ $$RMSE =  \sum_{i=1}^{N} \sqrt{\frac{(y_{i, pred} - y_{i, actual})^{2}}{N}}$$
 <li>Remove all words in reviews of $Y_{s}$ that are in the list Overlap_Words</li>
 <li>Represent $B$ and $Y_{s}$ as LDA matrices using a loading of 25 topics over the entire corpus of reviews
 <br><br></li>
-</ol>
-</li>
-<li><p><strong>Train</strong>:</p>
-<ol>
-<li>Train each of our algorithms on $Y_{s}$</li>
-<li>Each training point will be characterized by the tuple (Review as LDA Matrix, Restaurant Rating, Restaurant ID)</li>
-<li>We use the following algorithms:<ol>
-<li>Random Forest</li>
-<li>Bagged Decision Tree</li>
-<li>Linear SVM</li>
-<li>SVM</li>
-<li>Multinomial Logit Classification</li>
-</ol>
-</li>
-</ol>
-</li>
-<li><p><strong>Test:</strong></p>
-<ol>
-<li>Our test set is the set of user reviews, $B$<ol>
-<li>Note: we can generate artificial sets of user reviews using combinations of existing user reviews</li>
-</ol>
-</li>
-<li>Try classifying the test set using all the different algorithms, pick the one that performs best at classifying the review's rating<ol>
-<li>Each element in the test set will have the form (User Review, Predicted Review Rating, Actual Review Rating, Predicted Restaurant) we choose the classifier that minimizes the <strong>RSME</strong> of the review rating classifications  </li>
-</ol>
-</li>
-</ol>
-</li>
-<li><p><strong>Report:</strong></p>
-<ol>
-<li>Return the restaurant classification results from the classification algorithm that performs best as the list H1_Result<ol>
-<li>(User Review, Predicted Restaurant Rating, Actual Review Rating, Predicted Restaurant)</li>
-</ol>
-</li>
 </ol>
 </li>
 </ol>
@@ -11905,15 +11869,80 @@ $$RMSE =  \sum_{i=1}^{N} \sqrt{\frac{(y_{i, pred} - y_{i, actual})^{2}}{N}}$$
 <li><p>Create a bag of words using the H&amp;L dictionary for all reviews in $B$ and $Y_{s}$</p>
 </li>
 <li>Run TF-IDF on reviews in $B$ using the entire corpus</li>
-<li>Run TF-IDF on reviews in $Y_{s}$ using the entire corpus</li>
+<li>Run TF-IDF on reviews in $Y_{s}$ using the entire corpus  </li>
 </ol>
 </li>
 </ol>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="Training-and-Classification">Training and Classification<a class="anchor-link" href="#Training-and-Classification">&#182;</a></h1>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<ol>
+<li><strong>Matrix Representation</strong><ol>
+<li>For each review in $Y_{s}$ and $B$, we represent them in a feature space with the first N columns being the tf-idf representation (hypothesis 2) and the next M columns being the word topic weights from the LDA representation (hypothesis 1) so that we have a totat of M + N features. The following table is a sketch of the feature space for all J reviews, where $J = |Y_{s}| + |B|$:</li>
+</ol>
+</li>
+</ol>
+<table>
+<thead><tr>
+<th></th>
+<th>Term 1</th>
+<th>...</th>
+<th>Term N</th>
+<th>Word Topic 1</th>
+<th>...</th>
+<th>Word Topic M</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Review 1</td>
+<td>tf-idf weight</td>
+<td>...</td>
+<td>tf-idf weight</td>
+<td>word topic weight</td>
+<td>...</td>
+<td>word topic weight</td>
+</tr>
+<tr>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+</tr>
+<tr>
+<td>Review J</td>
+<td>tf-idf weight</td>
+<td>..</td>
+<td>tf-idf weight</td>
+<td>word topic weight</td>
+<td>...</td>
+<td>word topic weight</td>
+</tr>
+</tbody>
+</table>
 <ol>
 <li><p><strong>Train</strong>:</p>
 <ol>
-<li>We train each of our algorithms on the tf-idf representation of $Y_{s}$</li>
-<li>Each training point will be characterized by the tuple (Review as TF-IDF Matrix, Restaurant Rating, Restaurant ID)</li>
+<li>We train each of our algorithms on the reviews in $Y_{s}$</li>
+<li>Each training point will be characterized by the tuple (Review as Feature Matrix, Restaurant Rating, Restaurant ID)</li>
 <li>We use the following algorithms:<ol>
 <li>Random Forest</li>
 <li>Bagged Decision Tree</li>
@@ -11924,21 +11953,21 @@ $$RMSE =  \sum_{i=1}^{N} \sqrt{\frac{(y_{i, pred} - y_{i, actual})^{2}}{N}}$$
 </li>
 </ol>
 </li>
-<li><p><strong>Test:</strong></p>
+<li><p><strong>Classification:</strong></p>
 <ol>
-<li>Our test set will be defined as all the user reviews, represented as tf-idf vectors defined over the H&amp;L Dictionary<ol>
-<li>We can generate artificial sets of user reviews using combinations of existing user reviews </li>
+<li>We are interested in classifying the set of user reviews, $B$, into the restaurants within $Y_{s}$<ol>
+<li>Note: we can generate artificial sets of user reviews using combinations of existing user reviews</li>
 </ol>
 </li>
-<li>Try classifying the test set using all the different algorithms, pick the one that performs best<ol>
-<li>Each element in the test set will have the form (User Review, Actual Rating, Predicted Restaurant Rating, Predicted Restaurant), we choose the classifier that minimizes the <strong>RSME</strong> for our set of user reviews.</li>
+<li>Try classifying the user reviews using all the different algorithms, pick the one that performs best at classifying the review's rating (using the testing process below)<ol>
+<li>Each element in the test set will have the form (User Review, Predicted Review Rating, Actual Review Rating, Predicted Restaurant) we choose the classifier that minimizes the <strong>RSME</strong> of the review rating classifications  </li>
 </ol>
 </li>
 </ol>
 </li>
 <li><p><strong>Report:</strong></p>
 <ol>
-<li>Return the test results from the classification algorithm that performs best as the list H2_result<ol>
+<li>Return the restaurant classification results from the classification algorithm that performs best as the following tuple:<ol>
 <li>(User Review, Predicted Restaurant Rating, Actual Review Rating, Predicted Restaurant)</li>
 </ol>
 </li>
@@ -11954,7 +11983,42 @@ $$RMSE =  \sum_{i=1}^{N} \sqrt{\frac{(y_{i, pred} - y_{i, actual})^{2}}{N}}$$
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="Recommendation">Recommendation<a class="anchor-link" href="#Recommendation">&#182;</a></h1>
+<h1 id="Testing">Testing<a class="anchor-link" href="#Testing">&#182;</a></h1><p>Whether or not a user likes a recommendation is hard to capture because we don't know if they like it or not until after we recommend it. In the above design, we'd be recommending a <em>new</em> restaurant to the user. To see if they actually like it, we'd have to follow up after we make the recommendation and ask them how they felt. But this isn't feasible because we don't have a set of people we can just ask how they felt.</p>
+<p>That is, we know $y_{pred}$ but we don't know $y_{actual}$.</p>
+<p>But we can get around this because sometimes a user review rating is also that user's restaurant rating. For a given user, if she only has one review for a restaurant then the rating for that review is also her rating for the restaurant.</p>
+<p>We can use this to test our recommendation system. We propose the following test design:</p>
+<p><strong>Build:</strong></p>
+<ul>
+<li>As before, let $B$ be the total set of user reviews.</li>
+<li>Let $R$ be the set of restaurants that the user has reviewed only once.</li>
+<li>Take some percentage, $p$, of the set $R$ and take the subset of reviews from $B$ that correspond to these restaurants. Let this be the set of test restaurants $B_{test}$.</li>
+<li>Set the remaining $1-p$ percentage of the set $R$ and call this the training set of restaurants $R_{train}$. </li>
+<li>Note every restaurant in $R_{train}$ and $B_{test}$ has User's Restaurant Rating = User's Review Rating</li>
+</ul>
+<p><strong>Run:</strong></p>
+<ol>
+<li><p>For each review in $B_{test}$, create the tuple (User Review, Restaurant Rating, Restaurant ID) and replace the instance in $B_{test}$ with the tuple.</p>
+</li>
+<li><p>For each restaurant in $R_{train}$, find the total set of reviews from the Reviews database. Let this set be $Y$, where each element in $Y$ is a tuple (User Review, Restaurant Rating, Restaurant ID)</p>
+</li>
+<li><p>We run each of the algorithms above, using $Y$ as the training set and $B_{test}$ as the test set.</p>
+</li>
+<li>Step 3 results in a set $B_{result}$ where each element is characterized by (User Review, Actual Restaurant Rating, Predicted Restaurant Rating, Predicted Restaurant). Note the cardinality of $B_{result}$ is the same as that of $B_{test}$</li>
+<li>Set $y_{pred} =$ I(Predicted Restaurant) and $y_{actual} =$ I(Restaurant) where the indicator function I() is 1 if the user rated the restaurant at least a 4 and is 0 if the user rated the restaurant less than a 4</li>
+<li>The RMSE for the recommended restaurants is given by the following loss function:</li>
+</ol>
+$$RMSE = \sum_{i=1}^{N} \sqrt{\frac{(y_{i, pred} - y_{i, actual})^{2}}{N}}$$<p>Where N is the number of recommended restaurants in $B_{result}$. $y_{i, pred}$ is the predicted restaurant rating, $y_{i, actual}$ is the actual rating that the user gave to the restaurant. A RSME score of 0 is a perfect score and means that the recommendation system did really well. In this case, success means that the recommendation system was able to accurately predict how the user would feel about the restaurant on a binary scale (good or bad).</p>
+<p>Note, this function is analagous to the mean squared error loss function used in the 2013 Yelp RecSys challenge with the difference being that $y_{i, pred}$ and $y_{i, actual}$ are discrete categorical variables $\in \{1, 2, 3, 4, 5\}$:</p>
+$$RMSE =  \sum_{i=1}^{N} \sqrt{\frac{(y_{i, pred} - y_{i, actual})^{2}}{N}}$$
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="Final-Recommendation">Final Recommendation<a class="anchor-link" href="#Final-Recommendation">&#182;</a></h1>
 </div>
 </div>
 </div>
@@ -11975,77 +12039,33 @@ $$RMSE =  \sum_{i=1}^{N} \sqrt{\frac{(y_{i, pred} - y_{i, actual})^{2}}{N}}$$
 <tr>
 <td><strong><em>Same Word Choice</em></strong></td>
 <td>Yes</td>
-<td>0.6 <em> Yes + 0.4 </em> No</td>
+<td>ML Result(Tone, Word Choice)</td>
 </tr>
 <tr>
 <td><strong><em>Diff Word Choice</em></strong></td>
-<td>0.4 <em> Yes + 0.6 </em> No</td>
+<td>ML Result(Tone , Word Choice)</td>
 <td>No</td>
 </tr>
 </tbody>
 </table>
-<p>After running the above algorithms, we'll have two sets of data:</p>
-<div class="highlight"><pre><span></span><span class="n">H1_Result</span> <span class="o">=</span> <span class="p">[(</span><span class="n">User</span> <span class="n">Review</span><span class="p">,</span>  <span class="n">Actual</span> <span class="n">Review</span> <span class="n">Rating</span><span class="p">,</span> <span class="n">Restaurant</span> <span class="n">Predicted</span> <span class="n">by</span> <span class="n">H1</span><span class="p">,</span> <span class="n">Predicted</span> <span class="n">Restaurant</span> <span class="n">Rating</span><span class="p">)]</span>
-<span class="n">H2_Result</span> <span class="o">=</span> <span class="p">[(</span><span class="n">User</span> <span class="n">Review</span><span class="p">,</span>  <span class="n">Actual</span> <span class="n">Review</span> <span class="n">Rating</span><span class="p">,</span> <span class="n">Restaurant</span> <span class="n">Predicted</span> <span class="n">by</span> <span class="n">H2</span><span class="p">,</span> <span class="n">Predicted</span> <span class="n">Restaurant</span> <span class="n">Rating</span><span class="p">)]</span>
+<p>After running the above algorithms and choosing the algorithm that best classifies using our testing process, we'll have the following list of classification results:</p>
+<div class="highlight"><pre><span></span><span class="n">ml_result</span> <span class="o">=</span> <span class="p">[</span><span class="n">Results</span> <span class="kn">from</span> <span class="nn">Best</span> <span class="nn">Performing</span> <span class="nn">ML</span> <span class="nn">Algorithm</span><span class="p">]</span>
 </pre></div>
-<p>Create the following list:</p>
-<div class="highlight"><pre><span></span><span class="n">H1_Restaurants</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">Restaurants</span> <span class="ow">in</span> <span class="n">H1_Result</span><span class="p">))</span>
-    <span class="n">H2_Restaurants</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">Restaurants</span> <span class="ow">in</span> <span class="n">H2_Result</span><span class="p">))</span>
-    <span class="n">Restaurants</span> <span class="o">=</span> <span class="n">H1_Restaurants</span> <span class="o">+</span> <span class="n">H2_Restaurants</span>
+<p>With each element in the list containing the following tuple:</p>
+<p>(User Review, User Rating, Classified Restaurant Rating, Classified Restaurant)</p>
+<p>We create the following lists from our ML results:</p>
+<div class="highlight"><pre><span></span><span class="n">good_results</span> <span class="o">=</span> <span class="p">[</span><span class="n">tup</span> <span class="ow">or</span> <span class="n">tup</span> <span class="ow">in</span> <span class="n">ml_result</span> <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">tup</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">tup</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">1</span> <span class="o">&amp;</span> <span class="n">tup</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">]</span>
+<span class="n">restaurants</span> <span class="o">=</span> <span class="p">[</span><span class="n">tup</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="k">for</span> <span class="n">tup</span> <span class="ow">in</span> <span class="n">good_results</span><span class="p">]</span>
 </pre></div>
-<p>Run the following process to populate a 10 element recommendation list:</p>
-<div class="highlight"><pre><span></span><span class="n">Recommendation_list</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">Recommendation_list</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span>
-    <span class="k">for</span> <span class="n">each</span> <span class="n">restaurant</span> <span class="ow">in</span> <span class="n">Restaurants</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">restaurant</span> <span class="ow">in</span> <span class="n">both</span> <span class="n">H1_Restaurant</span> <span class="ow">and</span> <span class="n">H2_Restaurant</span><span class="p">:</span>
-            <span class="n">Recommendation_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">restaurant</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-          <span class="n">Draw</span> <span class="n">X</span> <span class="kn">from</span> <span class="nn">a</span> <span class="nn">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
-          <span class="k">if</span> <span class="n">restaurant</span> <span class="ow">in</span> <span class="n">H1_Restaurant</span><span class="p">:</span>
-              <span class="k">if</span> <span class="n">X</span> <span class="o">&lt;=</span> <span class="mf">0.6</span><span class="p">:</span>  
-                  <span class="n">Recommendation_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">restaurant</span><span class="p">)</span>
-              <span class="k">else</span><span class="p">:</span>
-                  <span class="k">pass</span>
-          <span class="k">else</span><span class="p">:</span>
-              <span class="k">if</span> <span class="n">X</span> <span class="o">&gt;</span> <span class="mf">0.6</span><span class="p">:</span>
-                  <span class="n">Recommendation_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">restaurant</span><span class="p">)</span>
-              <span class="k">else</span><span class="p">:</span>
-                  <span class="k">pass</span>
+<p>We run the following process to populate a top 5 recommendation list:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+<span class="n">restaurant_counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">restaurants</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">recommendation_list</span> <span class="o">=</span> <span class="n">restaurant_counter</span><span class="o">.</span><span class="n">most_common</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="n">recommendation_list</span> <span class="o">=</span> <span class="n">restaurant_counter</span><span class="o">.</span><span class="n">most_common</span><span class="p">()</span>
 </pre></div>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="So-how-do-we-test-if-this-actually-works?">So how do we test if this actually works?<a class="anchor-link" href="#So-how-do-we-test-if-this-actually-works?">&#182;</a></h1><p>Whether or not a user likes a recommendation is hard to capture because we don't know if they like it or not until after we recommend it. In the above design, we'd be recommending a <em>new</em> restaurant to the user. To see if they actually like it, we'd have to follow up after we make the recommendation and ask them how they felt.</p>
-<p>That is, we know $y_{pred}$ but we don't know $y_{actual}$. Following up on our recommendations isn't feasible since we don't have a set of people we can just ask how they felt.</p>
-<p>But we can get around this because sometimes a user review rating is also that user's restaurant rating. For a given user, if she only has one review for a restaurant then the rating for that review is also her rating for the restaurant.</p>
-<p>We can use this to test our recommendation system. Construct the following test design:</p>
-<p><strong>Build:</strong></p>
-<ul>
-<li>As before, let $B$ be the total set of user reviews.</li>
-<li>Let $R$ be the set of restaurants that the user has reviewed only once.</li>
-<li>Take some percentage, $p$, of the set $R$ and let this be the set of test restaurants $R_{test}$.</li>
-<li>Set the remaining $1-p$ percentage of the set $R$ and call this the training set of restaurants $R_{train}$. </li>
-<li>Note every review in $R$ has Restaurant Rating = Review Rating</li>
-</ul>
-<p><strong>Run:</strong></p>
-<ol>
-<li><p>For each restaurant in $R_{test}$ find the corresponding review in $B$. Assign the tuple (User Review, Restaurant Rating, Restaurant ID) to the set $B_{test}$</p>
-</li>
-<li><p>For each restaurant in $R_{train}$, find the total set of reviews from the Reviews database. Let this set be $Y$, where each element in $Y$ is a tuple (User Review, Restaurant Rating, Restaurant ID)</p>
-</li>
-<li><p>We run each of the algorithms above, using $Y$ as the training set and $B_{test}$ as the test set.</p>
-</li>
-<li>Step 3 results in a set $B_{result}$ where each element is characterized by (User Review, Actual Restaurant Rating, Predicted Restaurant Rating, Predicted Restaurant). Note the cardinality of $B_{result}$ is the same as that of $B_{test}$</li>
-<li>Set $y_{pred} =$ I(Predicted Restaurant) and $y_{actual} =$ I(Restaurant) where the indicator function I() is 1 if the user rated the restaurant at least a 4 and is 0 if the user rated the restaurant less than a 4</li>
-<li>The RMSE for the recommended restaurants is given by:</li>
-</ol>
-$$RMSE = \sum_{i=1}^{N} \sqrt{\frac{(y_{i, pred} - y_{i, actual})^{2}}{N}}$$<p>Where N is the number of recommended restaurants (10) in $B_{result}$. $y_{i, pred}$ is the predicted restaurant rating, $y_{i, actual}$ is the actual rating that the user gave to the restaurant. A RSME score of 0 is a perfect score and means that the recommendation system did really well. In this case, success means that the recommendation system was able to accurately predict how the user would feel about the restaurant on a binary scale (good or bad).</p>
+<p>The elements in recommendation_list will list the most commonly classified restaurants, based on the users review, in descending order. So the first element in recommendation_list will be the top recommendation, the second will be the second recommendation, etc.</p>
 
 </div>
 </div>
@@ -12056,8 +12076,8 @@ $$RMSE = \sum_{i=1}^{N} \sqrt{\frac{(y_{i, pred} - y_{i, actual})^{2}}{N}}$$<p>W
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <h1 id="So-what?">So what?<a class="anchor-link" href="#So-what?">&#182;</a></h1><p>Well, if the RMSE above is low we can say with some confidence that our recommendation system is able to give out some good suggestions. We're going to operate under the assumption that people want to go to places that they'll like, not places that they'll likely hate.</p>
-<p>So to adjust the above, we need to throw out the bad classifications. That is, we only test on user reviews that are positive (i.e. they gave at least a rating of 4). The recommendations from this modification should only return restaurants that the user will probably like.</p>
-<p>We can run the above test on a bunch of different user comments and we can generate our own by writing some sample Yelp reviews. We might even be able to test it out in DC.</p>
+<p>So to adjust for this, we keep only classification results where the user's rating is positive (greater than a 4). We also want to throw out the bad classifications, so we only keep classification results where the absolute difference between the classified restaurant rating and the user's rating is less than or equal to 1. The recommendations from this modification should only return restaurants that the user will probably like.</p>
+<p>We can run the above test on a bunch of different user comments and we can generate our own by writing some sample Yelp reviews. We might even be able to test it out in DC using our own reviews of restaurants that we've been to in DC.</p>
 <p>Also, we can try scrapping for other cities. We already have a script written for DC, and it might make more sense to use "live" data rather than what's available in the Yelp dataset.</p>
 
 </div>
