@@ -1,10 +1,12 @@
 To do list :
-* [X] make a do do list
+* [X]1. make a do do list
 
-* [] Wrangle data to get it ready for the LDA
-* [] run data through the LDA to build instances for the model
-* [] train and test different models
-* [] find a model that works
-* [] User input : create a way for users to input their reviews
-* [] Vizualization : some type of viz of their data
-* [] output of recommendations of restaurants 
+* []2. Wrangle data to get it ready for the LDA
+*      create a json doc with key: values being restaurante: reviews where reviews are 4 and 5 star
+*      create a json doc with key: values being user_id : reviews where reviews are 4 or 5 stars and user has more than 20 restaurant     *      reviews
+* []3. run data through the LDA to build instances for the model
+* []4. train and test different models
+* []5. find a model that works
+* []6. User input : create a way for users to input their reviews
+* []7. Vizualization : some type of viz of their data
+* []8.  output of recommendations of restaurants  
