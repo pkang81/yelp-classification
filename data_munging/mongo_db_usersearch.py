@@ -62,7 +62,7 @@ for obj in u.find({'review_count':{'$gt':30}}):
 get the business ids of the places they review
 '''
 
-
+userreview = {}
 
 for user in biguser:
     ulist = []
@@ -79,12 +79,29 @@ for key in keys:
         if '_id' in review: del review['_id']
 
 
-with open('filter_reviews.json', 'w') as outfile:
+with open('user_review_dictionary.json', 'w') as outfile:
     json.dump(userreview, outfile)
 
 
 
 
+biznames =[]
+
+for key in keys:
+    for review in userreview[key]:
+       biznames.append(review['business_id'])
+
+restreview = {}
+
+for restaurant in biznames:
+    rlist = []
+    for obj in c.find({'$and':[{'user_id':restaurant,'stars':{'$gte':4}}]):
+        rlist.append(obj)
+        restreview.update(restaurant:rlist})
+
+
+with open('rest_review_dictionary.json', 'w') as outfile:
+    json.dump(restreview, outfile)
 
 
 '''
