@@ -99,6 +99,12 @@ for restaurant in biznames:
         rlist.append(obj)
         restreview.update(restaurant:rlist})
 
+rkeys =restreview.keys()
+
+for key in keys:
+    for review in restreview[key]:
+        if '_id' in review: del review['_id']
+
 
 with open('rest_review_dictionary.json', 'w') as outfile:
     json.dump(restreview, outfile)
