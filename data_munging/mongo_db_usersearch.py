@@ -47,7 +47,7 @@ u = db.get_collection('users')
 
 biguser = []
 
-for obj in u.find({'review_count':{'$gt':4000}}):
+for obj in u.find({'review_count':{'$gt':30}}):
     print(obj['user_id'])
     biguser.append(obj['user_id'])
 
@@ -56,9 +56,6 @@ for obj in u.find({'review_count':{'$gt':4000}}):
 
 
 
-with open('users.csv', 'w') as myfile:
-    wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-    wr.writerow(biguser)
 
 
 '''
@@ -67,16 +64,27 @@ get the business ids of the places they review
 
 
 
-
-biznames =[]
-
 for user in biguser:
-    for obj in c.find({'user_id':user}):
-        biznames.append(obj['business_id'])
+    ulist = []
+    for obj in c.find({'$and':[{'user_id':user,'stars':{'$gte':4}}]):
+        ulist.append(obj)
+        userreview.update({user:ulist})
+# this throws an error because the first key is a bson object
+# gotta fix this
 
-with open('bizness.csv', 'w') as myfile:
-    wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-    wr.writerow(biguser)
+keys =userreview.keys()
+
+for key in keys:
+    for review in userreview[key]:
+        if '_id' in review: del review['_id']
+
+
+with open('filter_reviews.json', 'w') as outfile:
+    json.dump(userreview, outfile)
+
+
+
+
 
 
 '''
