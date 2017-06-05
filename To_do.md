@@ -9,3 +9,4 @@ To do list :
 * [ ] 6. User input : create a way for users to input their reviews
 * [ ] 7. Vizualization : some type of viz of their data
 * [ ] 8.  output of recommendations of restaurants  
+* [ ] 9. Write Web scrapper for 2 other cities and provide data visualization
